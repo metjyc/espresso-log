@@ -1,5 +1,5 @@
+import Home from "./pages/Home";
+
 export default function App() {
-  return (
-    <div className="text 3xl font-bold text-red-500">This is espresso Log.</div>
-  );
+  return <Home />;
 }

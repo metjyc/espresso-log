@@ -1,8 +1,6 @@
-import AppShell from "../components/AppShell/Appshell";
-
 export default function Home() {
   return (
-    <AppShell activeTab="home">
+    <>
       <header>
         <h1>Espresso Log에 오신걸 환영합니다.</h1>
       </header>
@@ -10,6 +8,6 @@ export default function Home() {
         추출하러 가기
       </button>
       <div>최근 샷</div>
-    </AppShell>
+    </>
   );
 }

@@ -1,13 +1,19 @@
+import { Coffee, Home, NotebookPen } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 
 type TabKey = "home" | "brew" | "logs";
 
 // 타입 객체 선언 다음에 붙어있는 빈배열은 배열 선언을 위함.
-const TABS: { key: TabKey; label: string; to: string }[] = [
+const TABS: {
+  key: TabKey;
+  label: string;
+  to: string;
+  icon: React.ElementType;
+}[] = [
   // 각 페이지의 고유한 값을 key값으로 지정
-  { key: "home", label: "홈", to: "/" },
-  { key: "brew", label: "추출", to: "/brew" },
-  { key: "logs", label: "기록", to: "/logs" },
+  { key: "home", label: "홈", to: "/", icon: Home },
+  { key: "brew", label: "추출", to: "/brew", icon: Coffee },
+  { key: "logs", label: "기록", to: "/logs", icon: NotebookPen },
 ];
 
 export default function AppShell() {
@@ -22,18 +28,23 @@ export default function AppShell() {
           <div className="h-full grid grid-cols-3">
             {/* TABS.map이 가능한 이유는 위에 TABS를 배열로 선언 해놨기 때문이다.*/}
             {/* tab 다음에 화살표 함수 이후 return이 없는 이유는 () 값 인식 떄문이다. */}
-            {TABS.map((tab) => (
-              <NavLink
-                key={tab.key}
-                to={tab.to}
-                className={({ isActive }) =>
-                  `flex flex-col items-center justify-center text-xs
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+
+              return (
+                <NavLink
+                  key={tab.key}
+                  to={tab.to}
+                  className={({ isActive }) =>
+                    `flex flex-col items-center justify-center text-xs
            ${isActive ? "text-amber-800 font-semibold" : "text-neutral-400"}`
-                }
-              >
-                {tab.label}
-              </NavLink>
-            ))}
+                  }
+                >
+                  <Icon size={20} />
+                  <span>{tab.label}</span>
+                </NavLink>
+              );
+            })}
           </div>
         </nav>
       </div>

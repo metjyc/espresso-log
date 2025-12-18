@@ -1,37 +1,65 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Brew() {
-  const [tenth, setTenth] = useState<number>(0);
+  const [accMs, setAccMs] = useState<number>(0);
   const [running, setRunning] = useState(false);
+  const [tick, setTick] = useState(0);
+
   const intervalRef = useRef<number | null>(null);
+  const startMsRef = useRef<number | null>(null);
+
+  const now = performance.now();
+  const elapsedMs =
+    running && startMsRef.current !== null
+      ? accMs + (now - startMsRef.current)
+      : accMs;
+
+  const centi = Math.floor(elapsedMs / 10);
+  const mm = String(Math.floor(centi / 6000)).padStart(2, "0");
+  const ss = String(Math.floor((centi % 6000) / 100)).padStart(2, "0");
+  const cc = String(centi % 100).padStart(2, "0");
+  const display = `${mm}:${ss}:${cc}`;
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, []);
 
   const handleStart = () => {
-    if (intervalRef.current !== null) {
-      return;
-    }
-    intervalRef.current = setInterval(() => {
-      setTenth((prev) => prev + 1);
-    }, 100);
+    if (running) return;
+    if (intervalRef.current !== null) return;
+    startMsRef.current = performance.now();
     setRunning(true);
+    intervalRef.current = window.setInterval(() => {
+      setTick((t) => t + 1);
+    }, 50);
   };
 
   const handleStop = () => {
-    if (intervalRef.current === null) {
-      return;
-    }
-    clearInterval(intervalRef.current);
-    intervalRef.current = null;
-    setRunning(false);
-  };
+    if (!running) return;
 
-  const handleReset = () => {
+    const start = startMsRef.current;
+    if (start !== null) {
+      const delta = performance.now() - start;
+      setAccMs((prev) => prev + delta);
+    }
+
+    startMsRef.current = null;
+    setRunning(false);
+
     if (intervalRef.current !== null) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+  };
 
-    setRunning(false);
-    setTenth(0);
+  const handleReset = () => {
+    if (running) handleStop();
+    setAccMs(0);
   };
 
   return (
@@ -42,23 +70,26 @@ export default function Brew() {
       </header>
       <section className="rounded-2xl bg-white shadow-sm border border-black/5 p-4 space-y-3">
         <p className="text-sm font-medium">타이머</p>
-        <div className="text-4xl font-bold tabular-nums">00 : 00 : 00</div>
+        <div className="text-4xl font-bold tabular-nums">{display}</div>
         <div className="grid grid-cols-3 gap-2">
           <button
             className="py-2 rounded-xl bg-amber-800 text-white"
             onClick={handleStart}
+            disabled={running}
           >
             Start
           </button>
           <button
             className="py-2 rounded-xl bg-neutral-200"
             onClick={handleStop}
+            disabled={!running}
           >
             Stop
           </button>
           <button
             className="py-2 rounded-xl bg-neutral-200"
             onClick={handleReset}
+            disabled={centi === 0}
           >
             Reset
           </button>
@@ -85,6 +116,15 @@ export default function Brew() {
           />
         </div>
 
+        <div className="space-y-0.5">
+          <label className="text-sm font-medium">추출량</label>
+          <input
+            placeholder="36g"
+            className="w-full rounded-xl border border-black/10 py-2"
+            inputMode="decimal"
+          />
+        </div>
+
         <div className="space-y-0.5 ">
           <label className="text-sm font-medium">노트</label>
           <textarea
@@ -93,7 +133,14 @@ export default function Brew() {
           />
         </div>
       </section>
-      <button className="w-full rounded-xl bg-amber-700 text-white py-3 font-semibold shadow-md active:translate-y-[1px] transition ">
+      <button
+        className="
+        justify-center flex
+        p-3 rounded-xl 
+        bg-amber-700 active:bg-amber-800 
+        font-semibold text-white shadow-md 
+        hover:shadow-lg transition-shadow"
+      >
         추출 기록 저장하기
       </button>
     </div>

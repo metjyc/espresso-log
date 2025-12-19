@@ -4,6 +4,7 @@ export default function Brew() {
   const [accMs, setAccMs] = useState<number>(0);
   const [running, setRunning] = useState(false);
   const [tick, setTick] = useState(0);
+  const [timeText, setTimeText] = useState("");
 
   const intervalRef = useRef<number | null>(null);
   const startMsRef = useRef<number | null>(null);
@@ -45,7 +46,10 @@ export default function Brew() {
     const start = startMsRef.current;
     if (start !== null) {
       const delta = performance.now() - start;
-      setAccMs((prev) => prev + delta);
+      const nextAccms = accMs + delta;
+
+      setAccMs(nextAccms);
+      setTimeText(formatMs(nextAccms));
     }
 
     startMsRef.current = null;
@@ -60,6 +64,10 @@ export default function Brew() {
   const handleReset = () => {
     if (running) handleStop();
     setAccMs(0);
+  };
+
+  const formatMs = (ms: number) => {
+    return `${mm}:${ss}:${cc}`;
   };
 
   return (
@@ -120,6 +128,16 @@ export default function Brew() {
           <label className="text-sm font-medium">추출량</label>
           <input
             placeholder="36g"
+            className="w-full rounded-xl border border-black/10 py-2"
+            inputMode="decimal"
+          />
+        </div>
+
+        <div className="space-y-0.5">
+          <label className="text-sm font-medium">추출시간</label>
+          <input
+            value={timeText}
+            placeholder="28초"
             className="w-full rounded-xl border border-black/10 py-2"
             inputMode="decimal"
           />

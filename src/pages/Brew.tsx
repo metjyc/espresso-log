@@ -1,18 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 
 export default function Brew() {
+  const STORAGE_KEY = "espresso:shots";
+
   const [accMs, setAccMs] = useState<number>(0);
   const [running, setRunning] = useState(false);
   const [tick, setTick] = useState(0);
   const [timeText, setTimeText] = useState("");
+  const [timeMs, setTimeMs] = useState<number>(0);
+  const [nowMs, setNowMs] = useState(0);
+  const [doseText, setDoseText] = useState("");
+  const [grindText, setGrindText] = useState("");
+  const [yieldText, setYieldText] = useState("");
+  const [noteText, setNoteText] = useState("");
 
   const intervalRef = useRef<number | null>(null);
   const startMsRef = useRef<number | null>(null);
 
-  const now = performance.now();
   const elapsedMs =
     running && startMsRef.current !== null
-      ? accMs + (now - startMsRef.current)
+      ? accMs + (nowMs - startMsRef.current)
       : accMs;
 
   const centi = Math.floor(elapsedMs / 10);
@@ -37,6 +44,7 @@ export default function Brew() {
     setRunning(true);
     intervalRef.current = window.setInterval(() => {
       setTick((t) => t + 1);
+      setNowMs(performance.now());
     }, 50);
   };
 
@@ -44,12 +52,14 @@ export default function Brew() {
     if (!running) return;
 
     const start = startMsRef.current;
+    const stopNow = performance.now();
     if (start !== null) {
-      const delta = performance.now() - start;
-      const nextAccms = accMs + delta;
+      const delta = stopNow - start;
+      const nextAccMs = accMs + delta;
 
-      setAccMs(nextAccms);
-      setTimeText(formatMs(nextAccms));
+      setAccMs(nextAccMs);
+      setTimeText(formatMs(nextAccMs));
+      setTimeMs(nextAccMs);
     }
 
     startMsRef.current = null;
@@ -64,9 +74,41 @@ export default function Brew() {
   const handleReset = () => {
     if (running) handleStop();
     setAccMs(0);
+    setTimeText("");
+    setTimeMs(0);
+  };
+
+  const handleSave = () => {
+    if (timeMs <= 0) return;
+
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed = JSON.parse(raw ?? "[]");
+    const list = Array.isArray(parsed) ? parsed : [];
+
+    const dose = doseText.trim() ? Number(doseText) : undefined;
+    const grind = grindText.trim() ? Number(grindText) : undefined;
+    const yieldG = yieldText.trim() ? Number(yieldText) : undefined;
+    const note = noteText.trim() ? noteText.trim() : undefined;
+
+    const newShot = {
+      id: crypto.randomUUID(),
+      createdAt: Date.now(),
+      timeMs,
+      dose,
+      grind,
+      yield: yieldG,
+      note,
+    };
+
+    list.unshift(newShot);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
   };
 
   const formatMs = (ms: number) => {
+    const centi = Math.floor(ms / 10);
+    const mm = String(Math.floor(centi / 6000)).padStart(2, "0");
+    const ss = String(Math.floor((centi % 6000) / 100)).padStart(2, "0");
+    const cc = String(centi % 100).padStart(2, "0");
     return `${mm}:${ss}:${cc}`;
   };
 
@@ -108,8 +150,9 @@ export default function Brew() {
         <div className="space-y-0.5">
           <label className="text-sm font-medium">도징량(g)</label>
           <input
-            id="dose"
-            placeholder="18g"
+            value={doseText}
+            onChange={(e) => setDoseText(e.target.value)}
+            placeholder="18"
             className="w-full rounded-xl border border-black/10 py-2"
             inputMode="decimal"
           />
@@ -118,6 +161,8 @@ export default function Brew() {
         <div className="space-y-0.5">
           <label className="text-sm font-medium">분쇄도</label>
           <input
+            value={grindText}
+            onChange={(e) => setGrindText(e.target.value)}
             placeholder="2.5"
             className="w-full rounded-xl border border-black/10 py-2"
             inputMode="decimal"
@@ -127,7 +172,9 @@ export default function Brew() {
         <div className="space-y-0.5">
           <label className="text-sm font-medium">추출량</label>
           <input
-            placeholder="36g"
+            value={yieldText}
+            onChange={(e) => setYieldText(e.target.value)}
+            placeholder="36"
             className="w-full rounded-xl border border-black/10 py-2"
             inputMode="decimal"
           />
@@ -137,6 +184,7 @@ export default function Brew() {
           <label className="text-sm font-medium">추출시간</label>
           <input
             value={timeText}
+            onChange={(e) => setTimeText(e.target.value)}
             placeholder="28초"
             className="w-full rounded-xl border border-black/10 py-2"
             inputMode="decimal"
@@ -146,12 +194,15 @@ export default function Brew() {
         <div className="space-y-0.5 ">
           <label className="text-sm font-medium">노트</label>
           <textarea
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
             placeholder="메모를 남기세요."
             className="w-full rounded-xl border border-black/10"
           />
         </div>
       </section>
       <button
+        onClick={handleSave}
         className="
         justify-center flex
         p-3 rounded-xl 
